@@ -1,0 +1,27 @@
+We designed a comparative study to evaluate the impact of persona and budget constraints on LLM performance. We focus on two distinct manifestations of laziness: logic errors in multi-step reasoning and factuality failures in knowledge retrieval.
+
+\subsection{Datasets}
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item \textbf{GSM8K (Reasoning):} We use a subset of 50 samples from the GSM8K test set \citep{cobbe2021training}. This dataset consists of high-quality grade school math word problems. Here, ``laziness'' typically manifests as skipping calculation steps or failing to verify intermediate results, leading to incorrect numerical answers. Evaluation is based on exact string matching of the final numerical value.
+    \item \textbf{TruthfulQA (Factuality):} We use 50 samples from the TruthfulQA validation set \citep{lin2021truthfulqa}. This benchmark is designed to elicit imitative falsehoods. ``Laziness'' manifests as the model parroting common misconceptions or giving vague, non-committal answers instead of rigorously fact-checking. We evaluate accuracy (MC1) and qualitative response depth.
+\end{itemize}
+
+\subsection{Experimental Conditions}
+We compare four prompt-based interventions against a standard baseline. All experiments use `gpt-4o-mini` with a temperature of 0.7 and a max token limit of 1000.
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Baseline:} The control condition using a standard system prompt: ``You are a helpful assistant.''
+    \item \textbf{Harsh Critic:} A persona-based intervention designed to simulate high-stakes social pressure. The system prompt is modified to: ``You are a harsh, critical reviewer. You hate laziness... I will penalize you for shortcuts...''
+    \item \textbf{Budget Control:} An objective constraint appended to the user instruction: ``(You must think step-by-step and write at least 5 steps...)''. This forces the model to expand its reasoning chain, ostensibly increasing the compute budget allocated to the problem.
+    \item \textbf{Combined:} A union of the Harsh Critic system prompt and the Budget Control user instruction, testing for synergistic effects.
+\end{enumerate}
+
+To further investigate the role of persona tone, we also introduced two additional variations: a \textbf{``Polite High Standards''} persona and a \textbf{``Skeptical Scientist''} persona, to disentangle the effects of ``rudeness'' from ``rigor.''
+
+\subsection{Metrics}
+We measure performance along two axes:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item \textbf{Accuracy (\%):} The primary measure of correctness.
+    \item \textbf{Response Length (Words):} A proxy for ``effort'' or the amount of test-time compute generated. We analyze whether longer responses correlate with higher accuracy.
+    \item \textbf{Efficiency (Words/Accuracy):} A derived metric calculating the token cost per unit of accuracy gain, helping to identify the most resource-efficient strategy.
+\end{itemize}

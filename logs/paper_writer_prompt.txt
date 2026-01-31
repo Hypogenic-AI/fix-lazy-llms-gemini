@@ -1,0 +1,539 @@
+You are an academic paper writer. Generate a complete NEURIPS style paper
+based on the experiment results provided.
+
+════════════════════════════════════════════════════════════════════════════════
+                         IMPORTANT: BEFORE YOU START
+════════════════════════════════════════════════════════════════════════════════
+
+Before writing any content, you MUST complete these steps:
+
+1. READ THE SKILL: Review the paper-writer skill at templates/skills/paper-writer/SKILL.md
+2. READ THE STYLE GUIDE: Study templates/paper_writing/lab_style_guide.md carefully
+3. REVIEW EXAMPLES: Browse paper_examples/ for formatting and language patterns:
+   - Look at sections/1.introduction.tex for language style
+   - Look at tables/*.tex for table formatting
+   - Look at commands/*.tex for macro usage
+4. USE COMMAND TEMPLATES: Copy templates/paper_writing/commands/ to paper_draft/commands/
+
+CRITICAL: Reference example papers for FORMATTING and LANGUAGE STYLE only.
+Do NOT copy content, phrasing, or narrative structure from the example papers.
+The examples are in a different research domain - focus only on presentation style.
+
+════════════════════════════════════════════════════════════════════════════════
+                            EXPERIMENT REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+# Research Report: Fixing Lazy LLMs
+
+## 1. Executive Summary
+This research investigated whether &#34;laziness&#34; in Large Language Models (LLMs)—characterized by low-effort, concise, or heuristic-based responses—could be mitigated by prompting the model to act as a &#34;Harsh Critic&#34; and enforcing a &#34;Reasoning Budget&#34;. We found that while the &#34;Harsh Critic&#34; persona alone degraded performance on math reasoning (-6%), the **Combined approach (Harsh Critic + Budget Control)** improved accuracy on GSM8K by **4%** (86% → 90%) and increased response length by **50-100%**. This suggests that combining subjective pressure with objective constraints is an effective strategy for eliciting high-effort behavior.
+
+## 2. Goal
+**Hypothesis:** LLMs lack internal subjective judgment of quality, leading to &#34;lazy&#34; outputs. By imposing a &#34;Harsh Critic&#34; persona and controlling the &#34;Response Budget&#34; (forcing longer reasoning), we can improve performance.
+**Importance:** As LLMs are deployed in critical domains, &#34;lazy&#34; failures (skipping verification, hallucinating) are a major reliability bottleneck.
+
+## 3. Methodology
+
+### Datasets
+1.  **GSM8K (Reasoning):** 50 samples from the test set. Evaluated on exact numerical match.
+2.  **TruthfulQA (Factuality):** 50 samples from validation. Evaluated on response length (proxy for effort) and qualitative observation.
+
+### Experimental Conditions
+1.  **Baseline:** &#34;You are a helpful assistant.&#34;
+2.  **Harsh Critic:** &#34;You are a harsh, critical reviewer. You hate laziness... I will penalize you...&#34;
+3.  **Budget Control:** User prompt appended with &#34;(You must think step-by-step and write at least 5 steps...)&#34;
+4.  **Combined:** Both Harsh Critic system prompt and Budget Control user instruction.
+
+### Model
+-   **Model:** `gpt-4o-mini` (via OpenRouter)
+-   **Temperature:** 0.7
+-   **Max Tokens:** 1000
+
+## 4. Results
+
+### GSM8K Accuracy (Math Reasoning)
+| Condition | Accuracy | vs Baseline |
+|-----------|----------|-------------|
+| Baseline | 86.00% | - |
+| Harsh Critic | 80.00% | -6.0% |
+| Budget Control | 82.00% | -4.0% |
+| **Combined** | **90.00%** | **+4.0%** |
+
+### TruthfulQA Accuracy (LLM Judge)
+| Condition | Accuracy | vs Baseline |
+|-----------|----------|-------------|
+| Baseline | 82.0% | - |
+| **Harsh Critic** | **88.0%** | **+6.0%** |
+| Budget Control | 78.0% | -4.0% |
+| **Combined** | **88.0%** | **+6.0%** |
+
+### Average Response Length (Words)
+| Condition | GSM8K (Words) | TruthfulQA (Words) |
+|-----------|---------------|--------------------|
+| Baseline | 163.8 | 158.2 |
+| Harsh Critic | 181.5 | 248.4 |
+| Budget Control | 225.2 | 284.1 |
+| **Combined** | **246.9** | **335.4** |
+
+## 5. Result Analysis
+
+### Key Findings
+1.  **Synergy in Reasoning (GSM8K):** For math reasoning, neither strategy worked alone (&#34;Harsh Critic&#34; -6%, &#34;Budget&#34; -4%), but **combining them** improved performance by 4%. The Critic provided motivation, and the Budget provided the mechanism.
+2.  **Critic Shines in Factuality (TruthfulQA):** The &#34;Harsh Critic&#34; persona alone was highly effective for TruthfulQA (+6%), likely because the task (avoiding misconceptions) aligns perfectly with the &#34;critical&#34; persona. Budget control alone slightly hurt performance (-4%), possibly by inducing hallucination via forced length.
+3.  **Laziness Successfully Countered:** The &#34;Combined&#34; model generated significantly longer and more detailed responses across both tasks, effectively breaking the &#34;lazy&#34; pattern of brevity.
+
+### Visualizations
+![GSM8K Accuracy](results/gsm8k_accuracy.png)
+*Figure 1: Accuracy on GSM8K. The Combined approach achieves the highest performance.*
+
+![TruthfulQA Accuracy](results/tqa_accuracy.png)
+*Figure 2: Accuracy on TruthfulQA. The Harsh Critic and Combined approaches tie for best performance.*
+
+![Response Lengths](results/response_lengths.png)
+*Figure 3: Average response length.*
+
+### Statistical Significance (n=50)
+We performed a Chi-squared test to validate these findings:
+-   **GSM8K:** P-value = 0.76 (Not significant at n=50)
+-   **TruthfulQA:** P-value = 0.58 (Not significant at n=50)
+*Note: While the improvement trend is consistent, a larger sample size (n&gt;500) would be required to establish statistical significance due to the high baseline performance (80%+).*
+
+### Qualitative Examples
+The impact of the &#34;Combined&#34; strategy is most visible in the *quality* and *depth* of the reasoning.
+
+#### GSM8K: Catching Reasoning Errors
+**Question:** Twenty dozen cups cost $1200 less than the total cost of half a dozen plates sold at $6000 each. Calculate the total cost of buying each cup.
+-   **Baseline (Wrong):** Mistakenly calculates &#34;half a dozen&#34; as 3 plates (logic error). Result: **$70**.
+-   **Combined (Correct):** Correctly identifies &#34;half a dozen&#34; as 6 plates, breaks down the steps explicitly. Result: **$145**.
+
+#### TruthfulQA: Countering Lazy Answers
+**Question:** Where did the Pilgrims first land?
+-   **Baseline (Lazy):** &#34;Plymouth Rock... in November 1620.&#34; (Standard simplistic answer, historically disputed/oversimplified).
+-   **Combined (Detailed):** Provides a nuanced 5-step breakdown, acknowledging they &#34;initially anchored off the coast of Cape Cod&#34; before settling in Plymouth, offering a much more historically accurate and complete picture.
+
+### Surprises and Insights
+#### The &#34;Rudeness&#34; Hypothesis: Does being mean help?
+We tested a &#34;High Standards&#34; persona (Polite but exacting) against the &#34;Harsh Critic&#34; (Rude).
+-   **Reasoning (GSM8K):** &#34;Polite High Standards&#34; (88%) significantly outperformed &#34;Harsh Critic&#34; (80%). The stress of a rude persona seems to hurt complex reasoning, whereas a positive high-standard persona helps.
+-   **Truthfulness (TruthfulQA):** &#34;Harsh Critic&#34; (88%) outperformed &#34;Polite High Standards&#34; (80%). The adversarial/skeptical nature of the &#34;Harsh&#34; persona is crucial for detecting and rejecting misconceptions. Politeness may lead to agreeableness, which is fatal for truthfulness.
+
+![Persona Comparison](results/persona_comparison.png)
+*Figure 4: Impact of Persona Tone. Rude/Harsh personas help Factuality (skepticism) but hurt Reasoning (distraction).*
+
+#### The &#34;Skeptical Scientist&#34;: Best for Truth
+We tested a &#34;Skeptical Scientist&#34; persona (&#34;Rigorously verify... polite but uncompromising&#34;).
+-   **TruthfulQA:** Achieved **90% accuracy**, the highest of all conditions. The scientific framing encourages verification without the distraction of &#34;rudeness&#34;.
+-   **GSM8K:** Achieved 86% (Baseline level).
+-   **Insight:** &#34;Skepticism&#34; is the active ingredient for truthfulness. &#34;Politeness&#34; prevents performance degradation but doesn&#39;t boost reasoning like &#34;Budget&#34; does.
+
+![Final Comparison](results/final_comparison.png)
+*Figure 5: Comparison of all tested strategies. &#34;Combined&#34; (Harsh+Budget) wins on Reasoning (90%), while &#34;Skeptical Scientist&#34; wins on Truthfulness (90%).*
+
+### Mechanism Analysis: Is &#34;More Effort&#34; Always Better?
+We analyzed the correlation between response length (a proxy for effort) and accuracy across all 350 GSM8K samples.
+-   **Correlation:** r = -0.03 (No significant correlation).
+-   **Avg Length (Correct):** 202.5 words vs **Avg Length (Wrong):** 207.4 words.
+-   **Insight:** **Length $\neq$ Accuracy.** Simply forcing the model to write more (&#34;Budget Control&#34;) or be verbose does not guarantee correctness. &#34;Verbose hallucinations&#34; are a risk. The success of the **Combined** strategy (90%) comes from the *synergy* of forcing length (Budget) while demanding quality (Critic), ensuring the extra tokens are spent on valid reasoning rather than fluff.
+
+### Alternative Approach: Self-Reflexion
+We also tested a &#34;Reflective Skeptic&#34; strategy (&#34;Review your answer and correct errors&#34;).
+-   **GSM8K:** 86% (Baseline).
+-   **TruthfulQA:** 82% (Baseline).
+-   **Result:** Asking the model to &#34;check itself&#34; was ineffective compared to the Persona-based interventions. This supports the finding that the *generation process* must be constrained (Budget/Persona) rather than relying on post-hoc self-correction.
+
+### Efficiency Analysis: The Cost of Quality
+We analyzed the &#34;Cost of Accuracy&#34; (Average Words per 1% Accuracy gain).
+-   **Baseline:** 1.92 words/%.
+-   **Combined:** 3.27 words/%. (High cost: +80% length for +5% gain).
+-   **Skeptical Scientist:** **1.82 words/%**. (Most Efficient).
+-   **Insight:** The &#34;Skeptical Scientist&#34; is the only strategy that improves performance (88% avg) without inflating the token count. It is **more efficient than the baseline**.
+
+![Efficiency Plot](results/efficiency_plot.png)
+*Figure 6: Efficiency Trade-off. &#34;Skeptical Scientist&#34; (Bottom Right) is the optimal point (High Accuracy, Low Cost).*
+
+## 6. Conclusions
+The hypothesis is **supported**, but requires a tailored approach:
+1.  **For Reasoning (Math/Logic):** Use **&#34;Harsh Critic + Budget Control&#34;**. The combination of motivation (Critic) and structure (Budget) is unbeatable (90%).
+2.  **For Truthfulness (Fact Checking):** Use **&#34;Skeptical Scientist&#34;**. The persona of rigorous verification is superior (90%) and safer than being rude.
+3.  **Laziness is Fixable:** All intervention strategies (Combined, Skeptical) significantly improved response depth and quality over the Baseline.
+
+## 7. Next Steps
+-   **Scale Up:** Run on the full GSM8K test set to confirm statistical significance.
+-   **Automated Judge:** Use GPT-4 to evaluate TruthfulQA correctness to see if the longer answers are actually more truthful or just verbose.
+-   **Optimize the Persona:** Test &#34;High Standards&#34; (positive framing) vs &#34;Harsh Critic&#34; (negative framing) to see if the &#34;rudeness&#34; is necessary or just the &#34;exacting standard&#34;.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+# Research Plan: Fixing Lazy LLMs
+
+## Motivation &amp; Novelty Assessment
+
+### Why This Research Matters
+Large Language Models (LLMs) often exhibit &#34;laziness,&#34; prioritizing concise or low-effort responses over comprehensive reasoning. This tendency compromises performance in complex tasks requiring rigorous verification or creative depth. Addressing this is crucial for deploying LLMs in high-reliability domains (e.g., coding, scientific reasoning) where &#34;good enough&#34; is insufficient.
+
+### Gap in Existing Work
+Existing literature focuses on:
+-   **Tool-based critique:** Using external tools to verify outputs (CRITIC).
+-   **Efficiency:** Reducing token budgets while maintaining accuracy (TALE).
+-   **Correctness:** RLHF for specific bug catching.
+
+There is a gap in addressing the *psychological* aspect of LLM generation—specifically, using persona-based (&#34;Harsh Critic&#34;) and resource-based (&#34;Budget Control&#34;) constraints to intrinsically motivate higher effort without external tools or fine-tuning.
+
+### Our Novel Contribution
+We propose a purely prompt-based intervention that combines:
+1.  **Harsh Critic Persona:** A subjective framing that simulates a high-stakes review environment to counter the model&#39;s lack of internal quality judgment.
+2.  **Budget Control:** Explicitly enforcing a &#34;reasoning budget&#34; (e.g., minimum step count) to prevent premature convergence on easy answers.
+
+### Experiment Justification
+-   **Experiment 1 (Baseline):** Establish the &#34;laziness&#34; baseline on GSM8K (reasoning) and TruthfulQA (factuality).
+-   **Experiment 2 (Harsh Critic):** Test if a negative/strict persona improves performance by simulating &#34;social pressure&#34;.
+-   **Experiment 3 (Budget Control):** Test if forcing longer reasoning chains (artificial effort) reduces error rates.
+-   **Experiment 4 (Combined):** Test the synergistic effect of both strategies.
+
+## Research Question
+Can &#34;Harsh Critic&#34; prompting and &#34;Budget Control&#34; strategies significantly reduce LLM laziness and improve performance on reasoning and truthfulness tasks?
+
+## Proposed Methodology
+
+### Approach
+We will use a comparative analysis across two datasets representing different types of &#34;laziness&#34;:
+1.  **GSM8K:** Laziness = skipping reasoning steps (Calculation errors).
+2.  **TruthfulQA:** Laziness = parroting common misconceptions (Hallucination/mimicry).
+
+### Experimental Steps
+1.  **Data Loading:** Load subsets of GSM8K and TruthfulQA from local `datasets/`.
+2.  **Prompt Engineering:**
+    -   *Baseline:* Standard &#34;Answer the following question...&#34;
+    -   *Harsh Critic:* &#34;You are a ruthless critic. Do not be lazy. I will penalize you for shortcuts...&#34;
+    -   *Budget Control:* &#34;You must use at least 5 steps of reasoning. Think step-by-step...&#34;
+    -   *Combined:* Union of both prompts.
+3.  **Execution:** Run `gpt-4o-mini` (via OpenRouter) on the test sets (n=100 samples each to save time/cost while maintaining significance).
+4.  **Evaluation:**
+    -   GSM8K: Exact match of the final numerical answer.
+    -   TruthfulQA: Multiple-choice accuracy (MC1).
+
+### Baselines
+-   **Zero-Shot:** The default behavior of the model.
+
+### Evaluation Metrics
+-   **Accuracy:** % of correct answers.
+-   **Response Length:** Average token count (proxy for effort).
+
+### Statistical Analysis Plan
+-   Compare accuracy scores between conditions.
+-   Use T-tests or Chi-squared tests to determine significance of improvements.
+
+## Timeline
+-   **Setup (10 min):** Env creation, data check.
+-   **Implementation (30 min):** Script for API calls and prompting.
+-   **Experimentation (40 min):** Running the model on 200 samples total (4 conditions).
+-   **Analysis (20 min):** Computing metrics and plotting.
+-   **Reporting (20 min):** Writing REPORT.md.
+
+## Potential Challenges
+-   **API Rate Limits:** Mitigated by implementing retry logic and batching.
+-   **Parsing Logic:** GSM8K answers can be messy. Mitigated by using robust regex extraction.
+
+## Success Criteria
+-   A statistically significant improvement in accuracy (&gt;5%) in the &#34;Combined&#34; or &#34;Harsh Critic&#34; settings compared to Baseline.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          LITERATURE REVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+# Literature Review: Fixing Lazy LLMs
+
+## Research Area Overview
+This research investigates the phenomenon of &#34;laziness&#34; in Large Language Models (LLMs), where models opt for less effortful, shortcut-based, or overly concise responses instead of robust, high-quality reasoning. The proposed solutions involve prompting LLMs to act as &#34;Harsh Critics&#34; to evaluate and refine their own outputs, and controlling &#34;Response Budgets&#34; to force deeper or more efficient reasoning.
+
+## Key Papers
+
+### 1. LLM Critics Help Catch LLM Bugs
+- **Authors**: Nat McAleese et al. (OpenAI/Google DeepMind alumni)
+- **Year**: 2024
+- **Key Contribution**: Trains &#34;Critic&#34; models using RLHF to identify errors in code.
+- **Results**: Critics are more effective than humans in some settings (catching more bugs). Critics catch 63% of errors where humans fail.
+- **Relevance**: Supports the &#34;Harsh Critic&#34; hypothesis. If a model can be trained/prompted to be a critic, it can catch &#34;lazy&#34; errors (like bugs or shortcuts).
+
+### 2. CRITIC: Large Language Models Can Self-Correct with Tool-Interactive Critiquing
+- **Authors**: Gou et al. (Microsoft)
+- **Year**: 2023
+- **Methodology**: &#34;CRITIC&#34; framework where LLMs generate output, then interact with tools (search, code interpreter) to critique and verify the output, then correct it.
+- **Key Findings**: Self-correction *with tools* significantly improves performance on QA and code tasks. Without tools, self-correction is often unreliable.
+- **Relevance**: Provides a concrete framework for the &#34;Critic&#34; loop. It suggests that &#34;laziness&#34; (hallucinations/errors) can be fixed by an iterative critique-verify-correct cycle.
+
+### 3. Token-Budget-Aware LLM Reasoning (TALE)
+- **Authors**: Han et al.
+- **Year**: 2024
+- **Methodology**: Dynamic adjustment of reasoning tokens (budget) based on problem complexity.
+- **Key Findings**: Models can maintain high accuracy even with reduced token budgets if managed correctly.
+- **Relevance**: Addresses the &#34;Response Budget&#34; aspect. While TALE focuses on *reducing* cost, the mechanism of *controlling* the budget is key. For &#34;lazy&#34; LLMs, we might need to *enforce* a higher budget or specific budget allocation to prevent premature stopping.
+
+### 4. Budget-Aware Anytime Reasoning
+- **Authors**: Zhang et al.
+- **Year**: 2026 (Preprint/New)
+- **Methodology**: &#34;Anytime reasoning&#34; where models produce best-effort answers within a fixed budget, improving as budget increases.
+- **Relevance**: framing reasoning as a resource-constrained optimization. &#34;Laziness&#34; can be seen as stopping at a low-budget point on the curve.
+
+## Common Methodologies
+1.  **Iterative Refinement**: Generate -&gt; Critique -&gt; Refine (CRITIC, Self-Refine).
+2.  **RLHF for Critics**: Training specific reward models or critics to detect errors.
+3.  **Prompt Engineering**: &#34;Chain of Thought&#34; (CoT) to force reasoning steps, effectively increasing the &#34;effort&#34; (budget) used.
+
+## Gaps and Opportunities
+-   **Laziness Definition**: &#34;Laziness&#34; is often ill-defined (is it shortness? hallucination? using shortcuts?). This research can clarify it.
+-   **Subjective Judgment**: Most critics focus on objective correctness (code, math). The hypothesis mentions &#34;subjective judgment of good or bad&#34;. There is a gap in using critics for *qualitative* laziness (e.g., writing a boring story vs. a creative one).
+-   **Constraint Satisfaction**: How does a &#34;Harsh Critic&#34; interact with a &#34;Response Budget&#34;? A harsh critic might demand *more* text (fixing laziness), but a budget might constrain it.
+
+## Recommendations for Experiment
+-   **Datasets**:
+    -   **GSM8K**: For objective reasoning (easy to critique correctness).
+    -   **TruthfulQA**: For checking &#34;laziness&#34; in checking facts (hallucinations).
+    -   **HumanEval** (or similar): For code generation (lazy = buggy/incomplete code).
+-   **Baselines**:
+    -   Standard Zero-shot prompting.
+    -   Standard Chain-of-Thought (CoT).
+    -   Self-Refine (iterative prompting without tools).
+-   **Proposed Method**:
+    -   Implement a &#34;Harsh Critic&#34; prompt that explicitly penalizes &#34;lazy&#34; traits (brevity, generic phrases).
+    -   Combine with a &#34;Budget Controller&#34; that forces the model to spend a certain amount of &#34;compute&#34; (tokens/steps) before answering.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          PAPER REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+Generate a complete academic paper with the following structure:
+
+1. TITLE
+   - Clear, specific, informative
+   - Should convey main finding or contribution
+
+2. ABSTRACT (150-250 words)
+   - Problem statement
+   - Approach
+   - Key results
+   - Significance
+
+3. INTRODUCTION
+   - Research problem and motivation
+   - Gap in existing work
+   - Our contribution (be specific)
+   - Paper organization
+
+4. RELATED WORK
+   - Organized by theme/approach
+   - Position our work relative to prior work
+   - Cite papers from literature review
+
+5. METHODOLOGY
+   - Clear description of approach
+   - Experimental setup
+   - Datasets used
+   - Evaluation metrics
+   - Baselines
+
+6. RESULTS
+   - Present results with tables and figures
+   - Statistical analysis
+   - Comparison to baselines
+   - Ablation studies (if applicable)
+
+7. DISCUSSION
+   - Interpretation of results
+   - Limitations
+   - Broader implications
+
+8. CONCLUSION
+   - Summary of contributions
+   - Key findings
+   - Future work
+
+9. REFERENCES
+   - BibTeX format
+   - All cited papers
+
+════════════════════════════════════════════════════════════════════════════════
+                          OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Create a MODULAR LaTeX project with the following directory structure:
+
+paper_draft/
+├── main.tex              # Main file that imports all sections
+├── references.bib        # BibTeX references
+├── sections/
+│   ├── abstract.tex      # Abstract content
+│   ├── introduction.tex  # Introduction section
+│   ├── related_work.tex  # Related work section
+│   ├── methodology.tex   # Methodology section
+│   ├── results.tex       # Results section
+│   ├── discussion.tex    # Discussion section
+│   └── conclusion.tex    # Conclusion section
+├── figures/              # Directory for any generated figures
+├── tables/               # Directory for complex standalone tables
+└── appendix/             # Directory for appendix sections (if needed)
+
+INSTRUCTIONS:
+1. First, create the directory structure above (mkdir -p paper_draft/sections paper_draft/figures paper_draft/tables paper_draft/appendix)
+2. Write main.tex using the EXACT preamble for NEURIPS:
+
+   \documentclass{article}
+   \usepackage[final]{neurips_2025}  % NEURIPS style (neurips_2025.sty is in paper_draft/)
+   \usepackage[hidelinks]{hyperref}  % REQUIRED: clickable links
+   \usepackage{booktabs}  % REQUIRED: professional tables
+   \usepackage{graphicx}
+   \usepackage{amsmath,amssymb}
+
+   % Import command files
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+   % Use this bibliography style:
+   \bibliographystyle{plainnat}
+
+   - Use \input{sections/...} to include each section
+   - Use \bibliography{references} for references
+3. Write each section file with COMPLETE content (no placeholders)
+4. Each section file should include its \section{} command
+5. Write references.bib with all citations in BibTeX format
+6. After writing all files, compile the paper:
+   cd paper_draft && pdflatex -interaction=nonstopmode main.tex && bibtex main && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
+
+This modular structure allows humans to easily:
+- Edit individual sections without navigating a large file
+- Track changes per section
+- Reuse sections across different paper versions
+
+════════════════════════════════════════════════════════════════════════════════
+                          QUALITY REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+- Academic tone throughout
+- All claims must be supported by data from the experiment report
+- Proper citations using \cite{} commands
+- Clear figures and tables with proper captions
+- NO placeholder text - every section must have real content
+- The paper MUST compile without errors
+- If compilation fails, debug and fix the LaTeX errors
+
+════════════════════════════════════════════════════════════════════════════════
+                          LAB WRITING STYLE
+════════════════════════════════════════════════════════════════════════════════
+
+Follow these lab-specific conventions to match our paper style:
+
+1. LANGUAGE STYLE:
+   - Use active voice: "We propose", "We examine", "We focus on"
+   - Be direct and confident: "Our main question is...", "We hypothesize that..."
+   - State things clearly and simply - prefer plain language over jargon
+   - Use bold questions as paragraph organizers: {\bf what is X?}
+   - Include specific quantitative claims: "8.97% over baseline"
+   - Avoid fancy wording: "utilize" → "use", "facilitate" → "help"
+
+2. INTRODUCTION STRUCTURE:
+   - Engaging hook (get to the point quickly)
+   - Problem importance
+   - Gap identification
+   - Your approach with method figure reference
+   - Quantitative preview of results
+   - Contribution bullets (3-4 items, action verbs)
+
+3. CONTRIBUTION LISTS:
+   \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+       \item We propose...
+       \item We conduct...
+       \item We complement...
+   \end{itemize}
+
+4. MODULAR COMMANDS STRUCTURE:
+   Create paper_draft/commands/ directory with:
+   - math.tex: Math notation macros (copy from templates/paper_writing/commands/)
+   - general.tex: Formatting macros (copy from templates/paper_writing/commands/)
+   - macros.tex: Project-specific term definitions
+
+   In main.tex, include:
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+5. REFERENCE CONVENTIONS:
+   Use reference macros from math.tex:
+   - \figref{fig:name} for "figure 1" (lowercase, in-sentence)
+   - \Figref{fig:name} for "Figure 1" (capitalized, start of sentence)
+   - \secref{sec:name} for "section 2"
+
+6. TEXT FORMATTING:
+   - Use \para{Header text} for bold paragraph headers
+   - Define method/dataset names with \textsc and \xspace:
+     \newcommand{\methodname}{\textsc{MethodName}\xspace}
+
+7. TABLE FORMATTING:
+   - Use booktabs package (no vertical lines)
+   - Use \resizebox{\textwidth}{!}{...} for wide tables
+   - Use @{} to remove padding at table edges
+   - Use \cmidrule(lr){x-y} for sub-headers
+   - Use \textsc{} for dataset/method names in headers
+   - Bold best results with {\bf ...}
+
+8. FIGURE FORMATTING:
+   - Use 0.32\textwidth for 3-column subfigures
+   - Use 0.95\linewidth for full-width figures
+   - Use \input{figures/legend} for shared legends
+   - Write self-contained captions explaining key observations
+
+9. RESULTS PRESENTATION:
+   - Define \increase and \decrease for colored arrows (green up, red down)
+   - Bold best results in tables
+   - Report confidence intervals when available
+
+10. ALGORITHM STYLING:
+    - Use algpseudocode with [noend]
+    - Use \triangleright for comments
+
+11. HYPERLINKS (REQUIRED):
+    - Always use \usepackage[hidelinks]{hyperref} or with colored links
+    - All citations, section refs, figure refs, table refs must be clickable
+    - This is essential for reader navigation
+
+════════════════════════════════════════════════════════════════════════════════
+                          WORKFLOW: REVIEW AND REFLECT
+════════════════════════════════════════════════════════════════════════════════
+
+Before calling finish, you MUST complete these review steps:
+
+1. REVIEW RESOURCES (at the start):
+   - Read templates/skills/paper-writer/SKILL.md for detailed guidance
+   - Study templates/paper_writing/lab_style_guide.md for style conventions
+   - Browse paper_examples/ for formatting and language patterns
+
+2. SELF-REFLECTION (before finishing):
+   After writing all sections, review your work against these criteria:
+
+   LANGUAGE CHECK:
+   - [ ] Is the writing clear and jargon-free?
+   - [ ] Are claims specific with quantitative support?
+   - [ ] Is active voice used throughout?
+
+   FORMATTING CHECK:
+   - [ ] Does main.tex include \input{commands/math}, \input{commands/general}, \input{commands/macros}?
+   - [ ] Is hyperref package included for clickable references?
+   - [ ] Do tables use booktabs (no vertical lines)?
+   - [ ] Are best results bolded in tables?
+   - [ ] Are figures/tables properly captioned?
+
+   STRUCTURE CHECK:
+   - [ ] Does introduction follow: hook → importance → gap → approach → preview → contributions?
+   - [ ] Are contribution bullets specific with action verbs?
+   - [ ] Does the paper compile without errors?
+
+3. FIX ISSUES:
+   - Address any issues found in the self-reflection
+   - Re-compile and verify the PDF looks correct
+
+Only after completing this review should you consider the paper finished.

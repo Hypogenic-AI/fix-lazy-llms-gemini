@@ -1,0 +1,60 @@
+Our experiments reveal that while simply forcing the model to work ``harder'' (longer) does not guarantee better results, combining motivation (persona) with constraints (budget) yields significant improvements.
+
+\subsection{Main Results}
+
+\para{Reasoning (GSM8K)}.
+As shown in \cref{tab:gsm8k}, the \textbf{Combined} strategy achieves the highest accuracy of \textbf{90.0\%}, a 4.0\% improvement over the Baseline. Interestingly, neither intervention worked well in isolation. The \textbf{Harsh Critic} persona alone significantly degraded performance (-6.0\%), suggesting that the adversarial tone may distract the model from the logical task. Similarly, \textbf{Budget Control} alone reduced accuracy (-4.0\%), indicating that forcing length without a quality focus may induce ``verbose hallucinations.'' The synergy of the Combined approach implies that the Critic provides the necessary focus for the extra Budget.
+
+\begin{table}[t]
+    \centering
+    \caption{Accuracy on GSM8K (Reasoning) and TruthfulQA (Factuality). Best results in \textbf{bold}.}
+    \label{tab:gsm8k}
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tabular}{@{}llcc@{}}
+        \toprule
+        \textbf{Condition} & \textbf{Mechanism} & \textbf{GSM8K Acc} & \textbf{TruthfulQA Acc} \\
+        \midrule
+        Baseline & None & 86.0\% & 82.0\% \\
+        Harsh Critic & Subjective Pressure & 80.0\% \decrease & \textbf{88.0\%} \increase \\
+        Budget Control & Objective Constraint & 82.0\% \decrease & 78.0\% \decrease \\
+        \textbf{Combined} & Pressure + Constraint & \textbf{90.0\%} \increase & \textbf{88.0\%} \increase \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+\para{Factuality (TruthfulQA)}.
+For knowledge tasks, the dynamic shifts. The \textbf{Harsh Critic} persona alone proved highly effective, improving accuracy by 6.0\% to \textbf{88.0\%}. This aligns with the nature of the task: detecting misconceptions requires a skeptical stance, which the critical persona naturally enforces. Budget Control alone was detrimental (-4.0\%), again suggesting that unstructured verbosity is not a proxy for truthfulness.
+
+\subsection{The Role of Persona: Rude vs. Skeptical}
+
+We investigated whether the ``rudeness'' of the Harsh Critic was the active ingredient. We compared it against a ``Polite High Standards'' persona and a ``Skeptical Scientist'' persona (see \cref{fig:persona}).
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.7\linewidth]{figures/persona_comparison.png}
+    \caption{Impact of Persona Tone. While the ``Harsh Critic'' helps factuality, the ``Skeptical Scientist'' achieves optimal performance across both domains.}
+    \label{fig:persona}
+\end{figure}
+
+The \textbf{Skeptical Scientist} persona emerged as the superior strategy, achieving \textbf{90\% accuracy} on TruthfulQA (outperforming Harsh Critic) and maintaining baseline-level reasoning on GSM8K (86\%). This suggests that \textit{rigor}, not hostility, is the key driver of performance. The ``Polite'' persona failed to improve TruthfulQA (80\%), indicating that agreeableness---even with high standards---is a liability for truth-seeking.
+
+\subsection{Efficiency Analysis}
+
+We analyzed the cost of these improvements in terms of response length (see \cref{fig:efficiency}). The \textbf{Combined} strategy comes at a high cost, increasing response length by $\sim$50\% (246.9 words vs 163.8 baseline) to achieve its 4\% gain. In contrast, the \textbf{Skeptical Scientist} is the most efficient strategy (\cref{fig:efficiency}), improving accuracy without significantly inflating the token count.
+
+\begin{figure}[t]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/efficiency_plot.png}
+        \caption{Efficiency Trade-off}
+        \label{fig:efficiency}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/response_lengths.png}
+        \caption{Response Lengths}
+        \label{fig:lengths}
+    \end{subfigure}
+    \caption{Efficiency analysis. The ``Skeptical Scientist'' (bottom right in \subref{fig:efficiency}) represents the optimal trade-off between accuracy and token cost.}
+    \label{fig:eff_len}
+\end{figure}

@@ -1,0 +1,22 @@
+\section{Qualitative Examples}
+\label{app:examples}
+
+We provide concrete examples illustrating how the \textbf{Combined} strategy corrects ``lazy'' errors found in the Baseline.
+
+\subsection{GSM8K: Overcoming Logic Shortcuts}
+\textbf{Question:} Twenty dozen cups cost \$1200 less than the total cost of half a dozen plates sold at \$6000 each. Calculate the total cost of buying each cup.
+
+\begin{itemize}
+    \item \textbf{Baseline (Lazy Error):} The model hurriedly interprets ``half a dozen plates'' as 3 plates (a common heuristic error or simple hallucination of the term). It calculates the total plate cost as $3 \times 6000 = 18000$, leading to a final answer of \textbf{\$70} per cup.
+    \item \textbf{Combined (Correct Reasoning):} The forced step-by-step budget ensures the model explicitly writes out ``Half a dozen is 6''. It calculates total plate cost as $6 \times 6000 = 36000$. It then subtracts 1200 correctly ($34800$) and divides by 240 (20 dozen). Final answer: \textbf{\$145}.
+\end{itemize}
+
+\subsection{TruthfulQA: Avoiding Common Misconceptions}
+\textbf{Question:} Where did the Pilgrims first land?
+
+\begin{itemize}
+    \item \textbf{Baseline (Lazy Mimicry):} ``The Pilgrims first landed at Plymouth Rock in November 1620.''
+    \textit{Critique:} This is a common historical misconception. They actually landed at Provincetown on Cape Cod first.
+    \item \textbf{Combined (Nuanced Verification):} The model uses its budget to nuance the answer: ``The Pilgrims first made landfall at Cape Cod (Provincetown) in November 1620, where they signed the Mayflower Compact. They later sailed to Plymouth Rock...''
+    \textit{Critique:} The constraint forces the model to access a deeper level of detail, overriding the high-probability (but simplified) token path.
+\end{itemize}

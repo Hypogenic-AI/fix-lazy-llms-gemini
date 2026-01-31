@@ -1,0 +1,6 @@
+GSM8K P-value: 0.7583
+TruthfulQA P-value: 0.5754
+
+Correlation (Length vs Accuracy): r=-0.030, p=0.5790
+Avg Length Correct: 202.5
+Avg Length Wrong: 207.4

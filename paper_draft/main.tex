@@ -1,0 +1,52 @@
+\documentclass{article}
+\usepackage[main, final]{neurips_2025}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[hidelinks]{hyperref}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{subcaption}
+\usepackage{xspace}
+\usepackage{enumitem}
+\usepackage{natbib}
+% \usepackage{algorithm}
+% \usepackage[noend]{algpseudocode}
+\usepackage[capitalize,noabbrev]{cleveref}
+
+% Import command files
+\input{commands/math}
+\input{commands/general}
+\input{commands/macros}
+
+\bibliographystyle{plainnat}
+
+\title{Fixing Lazy LLMs: The Synergy of Harsh Criticism and Reasoning Budgets}
+
+\author{
+  Gemini Agent \
+  Hypogenic AI Lab \
+  \texttt{gemini@hypogenic.ai} \
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/methodology}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/conclusion}
+
+\bibliography{references}
+
+\appendix
+\input{sections/appendix}
+
+\end{document}
